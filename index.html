@@ -160,6 +160,16 @@
     border:2px solid rgba(77,124,254,.55);box-shadow:0 0 44px rgba(255,59,71,.35),0 0 80px rgba(77,124,254,.28)}
   .video-frame video{display:block;width:100%;height:auto;background:#000}
   .video-cap{color:var(--muted);font-size:.88rem;margin-top:14px;text-align:center}
+  .mic-row{display:flex;align-items:center;gap:10px;margin:4px 0 2px}
+  .mic-label{font-weight:800;font-size:.9rem}
+  .mic-toggle{width:58px;height:30px;border-radius:999px;border:2px solid var(--line);background:#1a2138;position:relative;cursor:pointer;transition:background .2s,border-color .2s;padding:0;flex:none}
+  .mic-toggle .knob{position:absolute;top:2px;left:3px;width:22px;height:22px;border-radius:50%;background:#8b93b8;transition:left .18s ease,background .18s ease}
+  .mic-toggle.on{background:rgba(255,59,71,.22);border-color:var(--red)}
+  .mic-toggle.on .knob{left:29px;background:var(--red);box-shadow:0 0 12px rgba(255,59,71,.9)}
+  .mic-state{font-size:.82rem;letter-spacing:.1em}
+  .mic-state.on{color:var(--red)} .mic-state.off{color:var(--muted)}
+  .mic-note{font-size:.78rem;color:var(--muted);margin:8px 0 12px;line-height:1.5}
+  .mic-note b{color:#cfd6f5}
   @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}.reveal{opacity:1;transform:none}}
 </style>
 </head>
@@ -211,12 +221,18 @@
     <div class="sec-label">LIVE DEMO</div>
     <div class="demo-shell">
       <h1 id="appTitle">UNITED <span class="live">●</span></h1>
-      <div id="status" class="status">Ready. Say "Stay Calm" or tap EMERGENCY</div>
+      <div id="status" class="status">Mic is OFF. Flip the mic switch to enable the voice trigger.</div>
 
       <div class="row" style="margin-bottom:10px">
         <button id="emBtn" class="red">EMERGENCY</button>
-        <button id="listenBtn" class="dark">🎙️ Start Listening</button>
       </div>
+
+      <div class="mic-row">
+        <span class="mic-label">🎙️ Microphone</span>
+        <button id="micToggle" class="mic-toggle" role="switch" aria-checked="false" aria-label="Microphone on off switch"><span class="knob"></span></button>
+        <b id="micState" class="mic-state off">OFF</b>
+      </div>
+      <p class="mic-note">The mic is <b>OFF</b> when the page loads and only listens after <b>you</b> flip this switch. Audio recording laws vary by state — only turn the mic on where you have the legal right to record. Tapping EMERGENCY still records, because that's your explicit call for help.</p>
 
       <div class="row small" style="margin-bottom:6px">
         <button id="enableEmsBtn" class="muted">Enable EMS (phone verify)</button>
@@ -572,19 +588,30 @@
     recognition.onerror = e => {
       console.error('Recognition error', e);
       if (e.error === 'not-allowed' || e.error === 'service-not-allowed') {
-        wantListening = false;
-        setStatus('Mic blocked. Tap "Start Listening" to enable voice trigger.');
+        setMic(false);
+        setStatus('Mic blocked by the browser. Flip the mic switch to try again.');
       }
     };
     recognition.onend = () => { if (wantListening) { try { recognition.start(); } catch (_) {} } };
   }
 
-  function startListening() {
-    initSpeechRecognition();
-    if (!recognition) { alert('Voice recognition not supported in this browser. Use the EMERGENCY button.'); return; }
-    wantListening = true;
-    try { recognition.start(); setStatus('Listening... say "Stay Calm"'); }
-    catch (e) { setStatus('Listening... say "Stay Calm"'); }
+  function setMic(on) {
+    const t = $('micToggle'), st = $('micState');
+    if (on) {
+      initSpeechRecognition();
+      if (!recognition) { alert('Voice recognition not supported in this browser. Use the EMERGENCY button.'); return; }
+      wantListening = true;
+      try { recognition.start(); } catch (_) {}
+      t.setAttribute('aria-checked', 'true'); t.classList.add('on');
+      st.textContent = 'ON'; st.className = 'mic-state on';
+      setStatus('Listening... say "Stay Calm"');
+    } else {
+      wantListening = false;
+      if (recognition) { try { recognition.stop(); } catch (_) {} }
+      t.setAttribute('aria-checked', 'false'); t.classList.remove('on');
+      st.textContent = 'OFF'; st.className = 'mic-state off';
+      setStatus('Mic is OFF. Flip the mic switch to enable the voice trigger.');
+    }
   }
 
   // ---------- OTP: enable EMS on this device ----------
@@ -625,7 +652,7 @@
   // ---------- LEGAL ----------
   const PRIVACY_HTML = `
     <p><strong>UNITED Privacy Policy</strong> (template — not legal advice)</p>
-    <p><strong>What we collect:</strong> (1) Microphone audio — only after you trigger an alert ("Stay Calm" or EMERGENCY). (2) GPS location — captured at alert time. (3) Your phone number — only if you verify the device for EMS mode.</p>
+    <p><strong>What we collect:</strong> (1) Microphone audio — the mic is OFF by default and only listens after you flip the mic switch. Audio recording laws vary by state, so only enable it where you have the legal right to record. Tapping EMERGENCY records because that is your explicit call for help. (2) GPS location — captured at alert time. (3) Your phone number — only if you verify the device for EMS mode.</p>
     <p><strong>How it's used:</strong> Audio and location are transmitted solely to dispatch your alert — to your test relay in TEST mode, or to emergency services via RapidSOS in LIVE mode. Nothing is used for advertising.</p>
     <p><strong>What we don't do:</strong> We don't sell your data. This build runs no analytics and shows no ads.</p>
     <p><strong>Storage:</strong> Alert recordings are transmitted, not stored by us. App settings stay on your device (localStorage) and can be cleared by clearing site data.</p>
@@ -650,7 +677,7 @@
 
   // ---------- UI wiring ----------
   $('emBtn').addEventListener('click', activateEmergency);
-  $('listenBtn').addEventListener('click', startListening);
+  $('micToggle').addEventListener('click', () => setMic(!wantListening));
   $('enableEmsBtn').addEventListener('click', requestOtp);
   $('disableEmsBtn').addEventListener('click', disableEmsLocally);
   $('emBtn').addEventListener('dblclick', stopRecordingAndVoice);
@@ -664,8 +691,7 @@
     initLegal();
     syncChargeUI();
     warmupGPS();
-    startListening();
-    if (!recognition) setStatus('Ready. Say "Stay Calm" or tap EMERGENCY');
+    setMic(false); // mic stays OFF until the user flips the switch (recording laws vary by state)
   });
 
 })();

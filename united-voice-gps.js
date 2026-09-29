@@ -106,9 +106,13 @@ function sendViaSMSTo911(message) {
 }
 
 /* ---------- 4. WIRING EXAMPLE ---------- */
-// On page load:
+// On page load: the mic stays OFF. Only start listening after the USER flips
+// the mic switch — audio recording laws vary by state, so never auto-start it.
+// Example:
+//   micToggle.addEventListener('change', e => e.target.checked
+//     ? startVoiceTrigger(() => showConfirmScreen())
+//     : stopVoiceTrigger());
 warmupGPS();
-startVoiceTrigger(() => showConfirmScreen());
 
 // Confirm screen: your existing "Confirm SEND to EMS" UI calls this:
 async function onConfirmSend() {
