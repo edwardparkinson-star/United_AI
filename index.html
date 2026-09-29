@@ -208,7 +208,7 @@
   <section id="action">
     <div class="sec-label">🎬 SEE IT IN ACTION</div>
     <div class="video-frame">
-      <video controls playsinline preload="metadata">
+      <video id="howVideo" controls playsinline preload="metadata">
         <source src="united-how-it-works.mp4" type="video/mp4">
         Your browser does not support the video tag.
       </video>
@@ -232,7 +232,7 @@
         <button id="micToggle" class="mic-toggle" role="switch" aria-checked="false" aria-label="Microphone on off switch"><span class="knob"></span></button>
         <b id="micState" class="mic-state off">OFF</b>
       </div>
-      <p class="mic-note">The mic is <b>OFF</b> when the page loads and only listens after <b>you</b> flip this switch. Audio recording laws vary by state — only turn the mic on where you have the legal right to record. Tapping EMERGENCY still records, because that's your explicit call for help.</p>
+      <p class="mic-note">The mic is <b>OFF</b> when the page loads and only listens after <b>you</b> flip this switch — flipping it off kills the mic instantly. Audio recording laws vary by state — only turn the mic on where you have the legal right to record. Playing the how-it-works video pauses the mic automatically. Tapping EMERGENCY still records, because that's your explicit call for help.</p>
 
       <div class="row small" style="margin-bottom:6px">
         <button id="enableEmsBtn" class="muted">Enable EMS (phone verify)</button>
@@ -607,11 +607,25 @@
       setStatus('Listening... say "Stay Calm"');
     } else {
       wantListening = false;
-      if (recognition) { try { recognition.stop(); } catch (_) {} }
+      if (recognition) { try { recognition.abort(); } catch (_) {} try { recognition.stop(); } catch (_) {} }
+      if (recorder && recorder.state !== 'inactive') { try { recorder.stop(); } catch (_) {} }
+      if (mediaStream) { mediaStream.getTracks().forEach(t => { try { t.stop(); } catch (_) {} }); mediaStream = null; }
       t.setAttribute('aria-checked', 'false'); t.classList.remove('on');
       st.textContent = 'OFF'; st.className = 'mic-state off';
       setStatus('Mic is OFF. Flip the mic switch to enable the voice trigger.');
     }
+  }
+
+  // Playing the how-it-works video always pauses the mic so it never fights the video
+  function initVideoMicGuard() {
+    const hv = $('howVideo');
+    if (!hv) return;
+    hv.addEventListener('play', () => {
+      if (wantListening || mediaStream) {
+        setMic(false);
+        setStatus('Video playing — mic paused. Flip the mic switch to turn it back on.');
+      }
+    });
   }
 
   // ---------- OTP: enable EMS on this device ----------
@@ -678,6 +692,7 @@
   // ---------- UI wiring ----------
   $('emBtn').addEventListener('click', activateEmergency);
   $('micToggle').addEventListener('click', () => setMic(!wantListening));
+  initVideoMicGuard();
   $('enableEmsBtn').addEventListener('click', requestOtp);
   $('disableEmsBtn').addEventListener('click', disableEmsLocally);
   $('emBtn').addEventListener('dblclick', stopRecordingAndVoice);
