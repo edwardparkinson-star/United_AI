@@ -121,6 +121,42 @@
   footer{text-align:center;padding:34px 20px 46px;color:var(--muted);font-size:.8rem;line-height:1.7;position:relative;z-index:1}
   footer .sig{color:var(--white);font-weight:800}
   .honest{max-width:560px;margin:12px auto 0;font-size:.72rem;opacity:.75}
+
+  /* ===== EYE-POP LAYER ===== */
+  .hero{position:relative;overflow:hidden}
+  .sirens{position:absolute;inset:-40px;pointer-events:none;z-index:0}
+  .orb{position:absolute;width:340px;height:340px;border-radius:50%;filter:blur(90px)}
+  .orb-r{left:-90px;top:-70px;background:#ff2244;animation:sirenR 2.6s ease-in-out infinite}
+  .orb-b{right:-90px;top:-50px;background:#2f6bff;animation:sirenB 2.6s ease-in-out infinite}
+  @keyframes sirenR{0%,100%{opacity:.55;transform:scale(1)}50%{opacity:.1;transform:scale(.85)}}
+  @keyframes sirenB{0%,100%{opacity:.1;transform:scale(.85)}50%{opacity:.55;transform:scale(1)}}
+  .hero>*:not(.sirens){position:relative;z-index:1}
+  .hero h1{
+    background:linear-gradient(110deg,#ff6b74 20%,#ffffff 40%,#7ea2ff 60%,#ff6b74 80%);
+    background-size:220% auto;
+    -webkit-background-clip:text;background-clip:text;
+    animation:shine 5s linear infinite;
+    filter:drop-shadow(0 0 28px rgba(255,59,71,.4));
+  }
+  @keyframes shine{to{background-position:220% center}}
+  .cta{transition:transform .15s ease,box-shadow .2s ease}
+  .cta:hover{transform:translateY(-2px) scale(1.04)}
+  .cta-red{box-shadow:0 10px 38px rgba(255,59,71,.65)}
+  .marquee{overflow:hidden;white-space:nowrap;border-top:1px solid var(--line);border-bottom:1px solid var(--line);
+    background:rgba(255,255,255,.035);margin:8px -20px 0;padding:11px 0;position:relative;z-index:1}
+  .marquee-track{display:inline-block;animation:scrollX 24s linear infinite;font-weight:800;letter-spacing:.18em;font-size:.78rem}
+  .marquee-track span{margin:0 20px}
+  .marquee-track .r{color:var(--red)} .marquee-track .b{color:#8fb0ff}
+  @keyframes scrollX{to{transform:translateX(-50%)}}
+  .card{transition:transform .2s ease,box-shadow .2s ease}
+  .card:hover{transform:translateY(-5px);box-shadow:0 16px 36px rgba(77,124,254,.28)}
+  .vote-yes{animation:voteGlow 2.4s ease-in-out infinite}
+  @keyframes voteGlow{0%,100%{box-shadow:0 8px 28px rgba(77,124,254,.5)}50%{box-shadow:0 8px 44px rgba(77,124,254,.9)}}
+  .vote-flag{animation:flagPulse 2.4s ease-in-out infinite}
+  @keyframes flagPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}
+  .reveal{opacity:0;transform:translateY(26px);transition:opacity .7s ease,transform .7s ease}
+  .reveal.in{opacity:1;transform:none}
+  @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}.reveal{opacity:1;transform:none}}
 </style>
 </head>
 <body>
@@ -130,6 +166,7 @@
 <div class="wrap">
   <!-- HERO -->
   <div class="hero">
+    <div class="sirens"><div class="orb orb-r"></div><div class="orb orb-b"></div></div>
     <div class="badge">🇺🇸 HOUSTON, TEXAS</div>
     <h1>UNITED</h1>
     <p class="tagline">Voice-activated emergency response for America.<br>
@@ -140,6 +177,8 @@
       <a class="cta cta-ghost" href="#vote">🗳️ Vote for America</a>
     </div>
   </div>
+
+  <div class="marquee"><div class="marquee-track"><span class="r">🚨 VOICE-ACTIVATED</span>·<span>📍 GPS-LOCKED</span>·<span class="b">🇺🇸 BUILT FOR AMERICA</span>·<span class="r">🚨 VOICE-ACTIVATED</span>·<span>📍 GPS-LOCKED</span>·<span class="b">🇺🇸 BUILT FOR AMERICA</span>·</div></div>
 
   <!-- HOW IT WORKS -->
   <section>
@@ -707,6 +746,19 @@
   addEventListener('resize', resize);
   resize();
   requestAnimationFrame(tick);
+})();
+</script>
+
+<script>
+/* ============ Scroll reveal ============ */
+(() => {
+  const targets = document.querySelectorAll('.hero, section .card, #demo .demo-shell, #vote .vote-card, footer');
+  if (!('IntersectionObserver' in window)) return;
+  targets.forEach(el => el.classList.add('reveal'));
+  const io = new IntersectionObserver(entries => {
+    entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } });
+  }, { threshold: 0.1 });
+  targets.forEach(el => io.observe(el));
 })();
 </script>
 </body>
